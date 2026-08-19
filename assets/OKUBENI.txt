@@ -1,0 +1,9 @@
+3D easter egg (UMUT yazısına 10 kez tıklama) için gereken model dosyası:
+
+    e39-m5.dae
+
+Bu dosya boyutu büyük olduğu için repoya otomatik eklenmedi.
+claude.ai/design projesindeki  assets/e39-m5.dae  dosyasını indirip
+bu klasöre koy. Dosya yoksa easter egg sessizce çalışmaz, site normal açılır.
+
+Tamamen kapatmak istersen: config.js -> easterEgg: false
