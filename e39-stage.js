@@ -83,6 +83,27 @@
       return g;
     }
 
+    async loadCollada(base, src) {
+      const { ColladaLoader } = await import(base + "/examples/jsm/loaders/ColladaLoader.js");
+      const collada = await new Promise((res, rej) => new ColladaLoader().load(src, res, undefined, rej));
+      return collada.scene;
+    }
+
+    /* glb: meshopt ile sikistirilmis, cozucu three'nin kendi modulu */
+    async loadGLTF(THREE, base, src) {
+      const { GLTFLoader } = await import(base + "/examples/jsm/loaders/GLTFLoader.js");
+      const loader = new GLTFLoader();
+      try {
+        const { MeshoptDecoder } = await import(base + "/examples/jsm/libs/meshopt_decoder.module.js");
+        await MeshoptDecoder.ready;
+        loader.setMeshoptDecoder(MeshoptDecoder);
+      } catch (e) {
+        console.warn("[e39-stage] meshopt cozucu yuklenemedi:", e && e.message ? e.message : e);
+      }
+      const gltf = await new Promise((res, rej) => loader.load(src, res, undefined, rej));
+      return gltf.scene;
+    }
+
     async boot() {
       const base = "https://esm.sh/three@0.160.0";
       const THREE = await import(base);
@@ -113,13 +134,12 @@
       this.pivot = pivot;
 
       const bodyHex = this.getAttribute("body-color") || this.bodyColor || "#eff0f2";
-      const src = this.getAttribute("src") || "./assets/e39-m5.dae";
+      const src = this.getAttribute("src") || "./assets/e39-m5.glb";
 
       let model = null;
       try {
-        const { ColladaLoader } = await import(base + "/examples/jsm/loaders/ColladaLoader.js");
-        const collada = await new Promise((res, rej) => new ColladaLoader().load(src, res, undefined, rej));
-        model = collada.scene;
+        model = /\.gl(b|tf)$/i.test(src) ? await this.loadGLTF(THREE, base, src)
+                                        : await this.loadCollada(base, src);
 
         model.traverse((o) => {
           if (o.isMesh) {

@@ -140,7 +140,7 @@
       var sh = car.querySelector("[data-carshadow]");
       if (sh) sh.style.display = "block";
       var stage = document.createElement("e39-stage");
-      stage.setAttribute("src", "./assets/e39-m5.dae");
+      stage.setAttribute("src", "./assets/e39-m5.glb");
       stage.setAttribute("base-yaw", "0");
       stage.setAttribute("body-color", "#f0f1f3");
       stage.style.cssText = "width:100%; aspect-ratio:16/9; display:block";
@@ -171,7 +171,7 @@
         if (stage && stage._failed) { failed = true; running = false; return; }
         if (Date.now() - t0 > 12000) {
           failed = true; running = false;
-          console.warn("[davetiye] easter egg atlandı — assets/e39-m5.dae yüklenemedi");
+          console.warn("[davetiye] easter egg atlandı — assets/e39-m5.glb yüklenemedi");
           return;
         }
         setTimeout(poll, 150);

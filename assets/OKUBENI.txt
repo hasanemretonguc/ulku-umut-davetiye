@@ -1,7 +1,7 @@
-e39-m5.dae — 3D easter egg modeli (Collada 1.4.1, ~13 MB)
+e39-m5.glb — 3D easter egg modeli (glTF binary, meshopt sıkıştırmalı, 1.78 MB)
 
-Kaynak: 2002 BMW M5 E39 modeli
-  ~/Downloads/bmw-m5-e39/source/2002-bmw-m5-e39-49.zip  ->  model.dae
+Kaynak model: 2002 BMW M5 E39
+  ~/Downloads/bmw-m5-e39/source/2002-bmw-m5-e39-49.zip  ->  model.dae  (13 MB Collada)
 
 Bu dosya sayfa açılışında İNDİRİLMEZ. Sadece UMUT yazısına 7. kez
 tıklandığında yüklenmeye başlar; kimse tıklamazsa hiç indirilmez.
@@ -10,3 +10,16 @@ Dosya silinirse ya da yüklenemezse e39-stage.js düşük poligonlu bir
 sedan siluetine düşer — easter egg yine oynar, sadece model basitleşir.
 
 Easter egg'i tamamen kapatmak için: config.js -> easterEgg: false
+
+── DAE'den GLB nasıl üretildi ──────────────────────────────────────
+Blender 5.2 Collada desteğini kaldırdığı için dönüşüm three.js ile
+tarayıcıda yapıldı, sonra glTF-Transform ile sıkıştırıldı:
+
+1) ColladaLoader ile model.dae yüklendi; e39-stage.js'in zaten gizlediği
+   geometri (isLine / isLineSegments / isPoints ve edge_color* materyalli
+   mesh'ler — 1041 nesne) tamamen atıldı, GLTFExporter ile GLB yazıldı.
+2) npx @gltf-transform/cli dedup  ->  weld  ->  meshopt
+
+Boyutlar: 13.0 MB dae -> 8.87 MB glb (ham) -> 4.00 MB (weld) -> 1.78 MB (meshopt)
+Alternatifler: quantize 2.89 MB (çözücü gerekmez), draco 1.21 MB (ayrı wasm ister).
+Geometri kaybı yok — 146.468 üçgen korundu.

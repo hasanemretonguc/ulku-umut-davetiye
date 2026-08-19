@@ -13,7 +13,7 @@ Claude Design'daki `Ülkü & Umut Davetiye.dc.html` tasarımının bağımsız (
 | `config.js` | Ayarlar — düzenlenecek tek dosya |
 | `app.js` | Geri sayım, yol tarifi, scroll animasyonu, easter egg |
 | `e39-stage.js` | 3D BMW E39 sahnesi (easter egg) |
-| `assets/e39-m5.dae` | 3D model (~13 MB) — sadece easter egg tetiklenince indirilir |
+| `assets/e39-m5.glb` | 3D model (1.78 MB, meshopt) — sadece easter egg tetiklenince indirilir |
 | `og-image.png` | WhatsApp/Twitter link önizleme görseli (1200×630) |
 | `og-image.html` | Bu görselin kaynağı; değiştirip yeniden üretebilirsin |
 
@@ -81,9 +81,18 @@ UMUT yazısına 10 kez tıklanınca 3D BMW E39 ekranı sağdan sola drift atarak
 7. tıklamada model indirilmeye başlar — kimse tıklamazsa `assets/e39-m5.dae` hiç istenmez,
 yani normal ziyaretçi 13 MB'lık dosyayı indirmez.
 
-`assets/e39-m5.dae` silinir ya da yüklenemezse `e39-stage.js` kutu ve silindirlerden
+`assets/e39-m5.glb` silinir ya da yüklenemezse `e39-stage.js` kutu ve silindirlerden
 oluşan düşük poligonlu bir sedana düşer; animasyon yine oynar. Model geri konduğunda
 otomatik olarak o kullanılır.
+
+Model 13 MB'lık Collada'dan 1.78 MB'lık meshopt-sıkıştırmalı GLB'ye çevrildi — geometri
+kaybı yok, 146.468 üçgen korundu. Dönüşüm adımları `assets/OKUBENI.txt` içinde.
+`e39-stage.js` uzantıya göre yükleyici seçiyor: `.glb`/`.gltf` -> GLTFLoader + meshopt
+çözücü, diğer her şey -> ColladaLoader. Yani kaynak `.dae`'yi geri koymak da çalışır.
+
+Kaynak `.dae` repoda değil (`.gitignore`'da) — 13 MB'ı klonlara taşımanın anlamı yok.
+Yerelde `assets/e39-m5.dae` olarak duruyor, ayrıca
+`~/Downloads/bmw-m5-e39/source/2002-bmw-m5-e39-49.zip` içinde.
 
 ## Notlar
 
