@@ -20,7 +20,11 @@
       this.canvas = document.createElement("canvas");
       this.canvas.style.cssText = "width:100%;height:100%;display:block";
       this.appendChild(this.canvas);
-      this.boot().catch((e) => console.warn("[e39-stage]", e));
+      this.boot().catch((e) => {
+        this._failed = true;
+        console.warn("[e39-stage] model yüklenemedi:", e);
+        this.dispatchEvent(new CustomEvent("error"));
+      });
     }
 
     async boot() {

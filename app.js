@@ -217,7 +217,7 @@
     var car = document.querySelector("[data-car]");
     if (!umut || !layer || !car) return;
 
-    var hits = 0, armed = false, running = false, raf = null, failsafe = null;
+    var hits = 0, armed = false, running = false, failed = false, raf = null, failsafe = null;
 
     function arm() {
       if (armed) return;
@@ -239,7 +239,7 @@
       hits += 1;
       // 7. tıklamada 3D sahneyi indirmeye başla (kimse tıklamazsa hiç indirilmez)
       if (hits === 7) arm();
-      if (hits < 10 || running) return;
+      if (hits < 10 || running || failed) return;
       hits = 0;
       arm();
       waitAndRun();
@@ -252,7 +252,13 @@
       (function poll() {
         var stage = car.querySelector("e39-stage");
         if (stage && stage._ready) { running = false; run(stage); return; }
-        if (Date.now() - t0 > 12000) { running = false; return; }  // model yok/yüklenmedi: sessizce vazgeç
+        // model yok / yüklenmedi: bir daha denemeye kalkma
+        if (stage && stage._failed) { failed = true; running = false; return; }
+        if (Date.now() - t0 > 12000) {
+          failed = true; running = false;
+          console.warn("[davetiye] easter egg atlandı — assets/e39-m5.dae yüklenemedi");
+          return;
+        }
         setTimeout(poll, 150);
       })();
     }
