@@ -1,14 +1,10 @@
 /* ── Davetiye ayarları ──────────────────────────────────────────────
-   Sadece bu dosyayı düzenlemen yeterli. Yayınlamadan önce doldur.
+   Sadece bu dosyayı düzenlemen yeterli.
    ------------------------------------------------------------------ */
 window.DAVET_CONFIG = {
 
-  // LCV formu buraya WhatsApp mesajı olarak gider.
-  // Ülke kodu dahil, sadece rakam. Örn: "905321234567"
-  // Boş bırakılırsa form bilgileri panoya kopyalanır.
-  whatsappNumber: "",
-
   // "Sorularınız için" bölümünde görünen iletişim satırı.
+  // Boş bırakılırsa o satır hiç görünmez.
   contactLine: "Telefon numaranızı buraya ekleyin",
 
   // Geri sayım hedefi. Boş = davet varyantına göre otomatik

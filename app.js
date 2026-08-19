@@ -4,7 +4,6 @@
 
   var CFG = window.DAVET_CONFIG || {};
   var $ = function (id) { return document.getElementById(id); };
-  var LS_KEY = "uu-lcv-2026";
 
   /* ───────── davet varyantı ───────── */
   function variant() {
@@ -38,38 +37,16 @@
     introKicker: both ? "İki ayrı davet" : "Tarih & mekân",
     introTitle: both ? "Sizi iki güne de bekliyoruz" : "Sizi bu güne bekliyoruz",
     introText: both
-      ? "Kutlamamız iki şehirde, iki ayrı günde gerçekleşecek. Dilediğiniz güne — ya da ikisine de — katılabilirsiniz; aşağıdaki formda seçmeniz yeterli."
+      ? "Kutlamamız iki şehirde, iki ayrı günde gerçekleşecek. Dilediğiniz güne — ya da ikisine de — katılabilirsiniz."
       : (showE1
         ? "3 Eylül Perşembe akşamı Kdz. Ereğli'de, Tepe Park'ta bir araya geliyoruz. Konumu haritadan görebilir, yol tarifini tek dokunuşla açabilirsiniz."
         : "6 Eylül Pazar günü Ankara'da, Altın Koru Düğün Salonu'nda bir araya geliyoruz. Konumu haritadan görebilir, yol tarifini tek dokunuşla açabilirsiniz."),
-    rsvpLabel: both ? "Hangi güne katılacaksınız?" : "Katılımınız",
     dressText: showE1
       ? "Şık, davete uygun kıyafetler. Açık alanda olacağımız için akşam serinliğine karşı hafif bir üst kat işinize yarayabilir."
       : "Şık, gündüz davetine uygun kıyafetler. Bahçe alanında olacağımız için rahat ayakkabıları öneririz."
   };
 
-  /* ───────── durum ───────── */
-  var s = { name: "", phone: "", e1: false, e2: false, adults: 1, kids: 0, note: "", status: "" };
-  try {
-    var saved = JSON.parse(localStorage.getItem(LS_KEY) || "null");
-    if (saved) for (var k in saved) if (k in s) s[k] = saved[k];
-  } catch (e) {}
-
-  if (!showE1) s.e1 = false;
-  if (!showE2) s.e2 = false;
-  if (!showE1) s.e2 = true;
-  if (!showE2) s.e1 = true;
-
-  function persist() {
-    try {
-      localStorage.setItem(LS_KEY, JSON.stringify({
-        name: s.name, phone: s.phone, e1: s.e1, e2: s.e2,
-        adults: s.adults, kids: s.kids, note: s.note
-      }));
-    } catch (e) {}
-  }
-
-  /* ───────── statik metinleri bas ───────── */
+  /* ───────── metinleri bas ───────── */
   function setText(id, v) { var el = $(id); if (el) el.textContent = v; }
 
   setText("heroPlaceLine", COPY.heroPlaceLine);
@@ -79,50 +56,13 @@
   setText("introText", COPY.introText);
   setText("e1Kicker", COPY.e1Kicker);
   setText("e2Kicker", COPY.e2Kicker);
-  setText("rsvpLabel", COPY.rsvpLabel);
   setText("dressText", COPY.dressText);
   setText("contactLine", CFG.contactLine || "");
 
-  if (!showE1) { ["cardE1", "toggleE1"].forEach(function (id) { var el = $(id); if (el) el.remove(); }); }
-  if (!showE2) { ["cardE2", "toggleE2"].forEach(function (id) { var el = $(id); if (el) el.remove(); }); }
-
-  /* ───────── form bağla ───────── */
-  function syncForm() {
-    if ($("name")) $("name").value = s.name;
-    if ($("phone")) $("phone").value = s.phone;
-    if ($("note")) $("note").value = s.note;
-    setText("adults", String(s.adults));
-    setText("kids", String(s.kids));
-    [["e1", s.e1], ["e2", s.e2]].forEach(function (p) {
-      var box = $(p[0] + "Box"), tick = $(p[0] + "Tick"), btn = $("toggle" + p[0].toUpperCase());
-      if (box) box.style.background = p[1] ? "#8d4453" : "transparent";
-      if (tick) tick.style.opacity = p[1] ? "1" : "0";
-      if (btn) btn.setAttribute("aria-pressed", p[1] ? "true" : "false");
-    });
-    setText("statusText", s.status);
-  }
-
-  function bindInput(id, key) {
-    var el = $(id);
-    if (!el) return;
-    el.addEventListener("input", function () {
-      s[key] = el.value;
-      if (key === "name") { s.status = ""; setText("statusText", ""); }
-      persist();
-    });
-  }
-  bindInput("name", "name");
-  bindInput("phone", "phone");
-  bindInput("note", "note");
+  if (!showE1) { var c1 = $("cardE1"); if (c1) c1.remove(); }
+  if (!showE2) { var c2 = $("cardE2"); if (c2) c2.remove(); }
 
   function onClick(id, fn) { var el = $(id); if (el) el.addEventListener("click", fn); }
-
-  onClick("toggleE1", function () { s.e1 = !s.e1; s.status = ""; persist(); syncForm(); });
-  onClick("toggleE2", function () { s.e2 = !s.e2; s.status = ""; persist(); syncForm(); });
-  onClick("incAdults", function () { s.adults = Math.min(20, s.adults + 1); persist(); syncForm(); });
-  onClick("decAdults", function () { s.adults = Math.max(0, s.adults - 1); persist(); syncForm(); });
-  onClick("incKids", function () { s.kids = Math.min(20, s.kids + 1); persist(); syncForm(); });
-  onClick("decKids", function () { s.kids = Math.max(0, s.kids - 1); persist(); syncForm(); });
 
   /* ───────── yol tarifi ───────── */
   function openMap(query) {
@@ -140,31 +80,6 @@
   }
   onClick("map1", function () { openMap("Tepe Park, Ören, 67300 Kdz. Ereğli / Zonguldak"); });
   onClick("map2", function () { openMap("Altın Koru Düğün Salonları, Hasköy, Şht. Ömer Halisdemir Blv No:144, 06300 Altındağ/Ankara"); });
-
-  /* ───────── gönder ───────── */
-  onClick("submit", function () {
-    if (!s.name.trim()) { s.status = "Lütfen adınızı yazın."; setText("statusText", s.status); return; }
-    if (!s.e1 && !s.e2) { s.status = "Lütfen katılacağınız günü seçin."; setText("statusText", s.status); return; }
-    var gun = [s.e1 ? "03 Eylül Kdz. Ereğli" : null, s.e2 ? "06 Eylül Ankara" : null].filter(Boolean).join(" + ");
-    var lines = [
-      "Ülkü & Umut — Katılım Bildirimi",
-      "Ad Soyad: " + s.name.trim(),
-      s.phone.trim() ? "Telefon: " + s.phone.trim() : null,
-      "Katılım: " + gun,
-      "Yetişkin: " + s.adults + " · Çocuk: " + s.kids,
-      s.note.trim() ? "Not: " + s.note.trim() : null
-    ].filter(Boolean);
-    var text = lines.join("\n");
-    var num = String(CFG.whatsappNumber || "").replace(/[^0-9]/g, "");
-    if (num) {
-      window.open("https://wa.me/" + num + "?text=" + encodeURIComponent(text), "_blank");
-      s.status = "Teşekkürler " + s.name.trim().split(" ")[0] + "! WhatsApp penceresinden mesajı göndermeniz yeterli.";
-    } else {
-      try { navigator.clipboard.writeText(text); } catch (e) {}
-      s.status = "Teşekkürler! Bilgileriniz kopyalandı — çifte iletebilirsiniz.";
-    }
-    setText("statusText", s.status);
-  });
 
   /* ───────── geri sayım ───────── */
   var autoTarget = (V === "ankara") ? "2026-09-06T14:00:00+03:00" : "2026-09-03T19:00:00+03:00";
@@ -332,6 +247,4 @@
       raf = requestAnimationFrame(frame);
     }
   })();
-
-  syncForm();
 })();
