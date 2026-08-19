@@ -1,5 +1,7 @@
-/* <e39-stage> — Collada araba modelini şeffaf zeminde render eder.
-   API: el.setDrift(deg), el.setSpeed(px/frame) */
+/* <e39-stage> — araba sahnesini şeffaf zeminde render eder.
+   src verilen Collada modelini yükler; yüklenemezse düşük poligonlu
+   sedan siluetine düşer (easter egg her koşulda oynar).
+   API: el.setDrift(deg), el.setSpeed(px/frame), el.setActive(bool) */
 (function () {
   if (window.customElements && customElements.get("e39-stage")) return;
 
@@ -10,6 +12,7 @@
       this.speed = 0;
       this.wheelSpin = 0;
       this._ready = false;
+      this._usedFallback = false;
     }
 
     connectedCallback() {
@@ -22,15 +25,67 @@
       this.appendChild(this.canvas);
       this.boot().catch((e) => {
         this._failed = true;
-        console.warn("[e39-stage] model yüklenemedi:", e);
+        console.warn("[e39-stage] sahne kurulamadı:", e);
         this.dispatchEvent(new CustomEvent("error"));
       });
+    }
+
+    /* Collada yoksa: kutu ve silindirlerden sedan silueti */
+    buildFallbackCar(THREE, bodyHex) {
+      const g = new THREE.Group();
+      const paint = (hex, shine) => new THREE.MeshPhongMaterial({
+        color: new THREE.Color(hex), specular: 0xffffff, shininess: shine || 90
+      });
+
+      const body = paint(bodyHex, 95);
+      const glass = paint("#5d666f", 120);
+      const tyre = paint("#26221f", 20);
+      const rim = paint("#b9bcc0", 110);
+      const lampFront = paint("#f4f1ea", 130);
+      const lampRear = paint("#b3271f", 120);
+      const dark = paint("#2c2724", 40);
+
+      const box = (w, h, d, x, y, z, mat) => {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+        m.position.set(x, y, z);
+        g.add(m);
+        return m;
+      };
+
+      // gövde: alt kütle + omuz + tavan
+      box(4.40, 0.46, 1.80, 0.00, 0.54, 0, body);
+      box(4.05, 0.34, 1.74, -0.05, 0.90, 0, body);
+      box(1.95, 0.44, 1.52, -0.28, 1.24, 0, glass);
+      box(0.95, 0.16, 1.68, 1.52, 1.02, 0, body);   // kaput
+      box(0.85, 0.16, 1.68, -1.62, 1.00, 0, body);  // bagaj
+
+      // lambalar, ızgara
+      box(0.08, 0.15, 0.48, 2.19, 0.86, 0.55, lampFront);
+      box(0.08, 0.15, 0.48, 2.19, 0.86, -0.55, lampFront);
+      box(0.07, 0.14, 0.42, -2.02, 0.88, 0.58, lampRear);
+      box(0.07, 0.14, 0.42, -2.02, 0.88, -0.58, lampRear);
+      box(0.07, 0.20, 0.78, 2.20, 0.62, 0, dark);
+
+      // tekerlekler
+      const wheelGeo = new THREE.CylinderGeometry(0.37, 0.37, 0.27, 22);
+      const rimGeo = new THREE.CylinderGeometry(0.21, 0.21, 0.29, 18);
+      [[1.42, 0.86], [1.42, -0.86], [-1.42, 0.86], [-1.42, -0.86]].forEach((p) => {
+        const w = new THREE.Mesh(wheelGeo, tyre);
+        w.rotation.x = Math.PI / 2;
+        w.position.set(p[0], 0.37, p[1]);
+        g.add(w);
+        const r = new THREE.Mesh(rimGeo, rim);
+        r.rotation.x = Math.PI / 2;
+        r.position.set(p[0], 0.37, p[1]);
+        g.add(r);
+      });
+
+      return g;
     }
 
     async boot() {
       const base = "https://esm.sh/three@0.160.0";
       const THREE = await import(base);
-      const { ColladaLoader } = await import(base + "/examples/jsm/loaders/ColladaLoader.js");
       this.THREE = THREE;
 
       const renderer = new THREE.WebGLRenderer({ canvas: this.canvas, alpha: true, antialias: true, preserveDrawingBuffer: true });
@@ -57,28 +112,58 @@
       scene.add(pivot);
       this.pivot = pivot;
 
+      const bodyHex = this.getAttribute("body-color") || this.bodyColor || "#eff0f2";
       const src = this.getAttribute("src") || "./assets/e39-m5.dae";
-      const collada = await new Promise((res, rej) => new ColladaLoader().load(src, res, undefined, rej));
-      const model = collada.scene;
 
-      model.traverse((o) => {
-        if (o.isMesh) {
-          const mats = Array.isArray(o.material) ? o.material : [o.material];
-          const isEdge = mats.some((m) => m && /^edge_color/i.test(m.name || ""));
-          if (isEdge || o.isLine || o.isLineSegments) { o.visible = false; return; }
-          o.castShadow = false;
-          o.receiveShadow = false;
-          mats.forEach((m) => {
-            if (!m) return;
-            m.wireframe = false;
-            m.polygonOffset = true;
-            m.polygonOffsetFactor = 1;
-            if (m.shininess !== undefined) m.shininess = Math.max(m.shininess || 0, 70);
-            m.side = THREE.FrontSide;
+      let model = null;
+      try {
+        const { ColladaLoader } = await import(base + "/examples/jsm/loaders/ColladaLoader.js");
+        const collada = await new Promise((res, rej) => new ColladaLoader().load(src, res, undefined, rej));
+        model = collada.scene;
+
+        model.traverse((o) => {
+          if (o.isMesh) {
+            const mats = Array.isArray(o.material) ? o.material : [o.material];
+            const isEdge = mats.some((m) => m && /^edge_color/i.test(m.name || ""));
+            if (isEdge || o.isLine || o.isLineSegments) { o.visible = false; return; }
+            o.castShadow = false;
+            o.receiveShadow = false;
+            mats.forEach((m) => {
+              if (!m) return;
+              m.wireframe = false;
+              m.polygonOffset = true;
+              m.polygonOffsetFactor = 1;
+              if (m.shininess !== undefined) m.shininess = Math.max(m.shininess || 0, 70);
+              m.side = THREE.FrontSide;
+            });
+          }
+          if (o.isLine || o.isLineSegments || o.isPoints) o.visible = false;
+        });
+
+        // gövde rengi: modelin kırmızı boyalı panellerini beyaza çevir (stoplar dursun)
+        if (bodyHex && bodyHex !== "none") {
+          const paint = { cc0000: bodyHex, "930000": "#d6d8db" };
+          const done = new Set();
+          model.traverse((o) => {
+            if (!o.isMesh) return;
+            const mats = Array.isArray(o.material) ? o.material : [o.material];
+            mats.forEach((m) => {
+              if (!m || !m.color || done.has(m)) return;
+              const hex = m.color.getHexString();
+              if (paint[hex]) {
+                m.color.set(paint[hex]);
+                if (m.specular) m.specular.setHex(0xffffff);
+                if (m.shininess !== undefined) m.shininess = 95;
+                done.add(m);
+              }
+            });
           });
         }
-        if (o.isLine || o.isLineSegments || o.isPoints) o.visible = false;
-      });
+      } catch (e) {
+        console.warn("[e39-stage] " + src + " yüklenemedi, yedek araç kullanılıyor:", e && e.message ? e.message : e);
+        model = this.buildFallbackCar(THREE, bodyHex && bodyHex !== "none" ? bodyHex : "#eff0f2");
+        this._usedFallback = true;
+      }
 
       const wrap = new THREE.Group();
       wrap.add(model);
@@ -106,27 +191,6 @@
 
       this.baseYaw = parseFloat(this.getAttribute("base-yaw") || "0");
       pivot.rotation.y = this.baseYaw;
-
-      // gövde rengi: modelin kırmızı boyalı panellerini beyaza çevir (stoplar dursun)
-      const bodyHex = this.getAttribute("body-color") || this.bodyColor || "#eff0f2";
-      if (bodyHex && bodyHex !== "none") {
-        const paint = { cc0000: bodyHex, "930000": "#d6d8db" };
-        const done = new Set();
-        model.traverse((o) => {
-          if (!o.isMesh) return;
-          const mats = Array.isArray(o.material) ? o.material : [o.material];
-          mats.forEach((m) => {
-            if (!m || !m.color || done.has(m)) return;
-            const hex = m.color.getHexString();
-            if (paint[hex]) {
-              m.color.set(paint[hex]);
-              if (m.specular) m.specular.setHex(0xffffff);
-              if (m.shininess !== undefined) m.shininess = 95;
-              done.add(m);
-            }
-          });
-        });
-      }
 
       // 4) kamerayı otomatik çerçevele (3/4 ön-sol görünüm)
       const fit = measure(pivot);
@@ -172,6 +236,7 @@
       });
       return pts[0].x > pts[1].x ? pts[0] : pts[1];
     }
+
     setActive(on) {
       this.active = !!on;
       if (this.active) this.resize();
@@ -186,7 +251,6 @@
         const now = performance.now();
         if (this._last && now - this._last < 28) return;
         this._last = now;
-        const t = now / 1000;
         const yaw = this.baseYaw + (this.drift * Math.PI) / 180;
         this.pivot.rotation.y += (yaw - this.pivot.rotation.y) * 0.16;
         const roll = (-this.drift / 46) * 0.11;

@@ -13,7 +13,7 @@ Claude Design'daki `Ülkü & Umut Davetiye.dc.html` tasarımının bağımsız (
 | `config.js` | Ayarlar — düzenlenecek tek dosya |
 | `app.js` | Geri sayım, yol tarifi, scroll animasyonu, easter egg |
 | `e39-stage.js` | 3D BMW E39 sahnesi (easter egg) |
-| `assets/e39-m5.dae` | 3D model — elle eklenmeli, bkz. `assets/OKUBENI.txt` |
+| `assets/e39-m5.dae` | 3D model (~13 MB) — sadece easter egg tetiklenince indirilir |
 | `og-image.png` | WhatsApp/Twitter link önizleme görseli (1200×630) |
 | `og-image.html` | Bu görselin kaynağı; değiştirip yeniden üretebilirsin |
 
@@ -74,6 +74,16 @@ Depo public olmalı — ücretsiz planda Pages şartı.
 
 WhatsApp önizlemeyi önbelleğe alır; görseli değiştirdikten sonra linki test etmek için
 sonuna `?v=2` gibi bir parametre ekle.
+
+## Easter egg
+
+UMUT yazısına 10 kez tıklanınca 3D BMW E39 ekranı sağdan sola drift atarak geçer.
+7. tıklamada model indirilmeye başlar — kimse tıklamazsa `assets/e39-m5.dae` hiç istenmez,
+yani normal ziyaretçi 13 MB'lık dosyayı indirmez.
+
+`assets/e39-m5.dae` silinir ya da yüklenemezse `e39-stage.js` kutu ve silindirlerden
+oluşan düşük poligonlu bir sedana düşer; animasyon yine oynar. Model geri konduğunda
+otomatik olarak o kullanılır.
 
 ## Notlar
 
